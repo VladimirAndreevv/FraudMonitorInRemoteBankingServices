@@ -1,0 +1,202 @@
+---
+title: AsyncAPI
+sidebar_position: 2
+description: Документация API обмена событиями о транзакциях
+---
+
+# API
+
+## AsyncAPI
+
+Данный API описывает асинхронный обмен событиями о транзакциях между системой дистанционного банковского обслуживания (ДБО) и системой мониторинга подозрительной активности.
+
+Передача выполняется через брокер сообщений Kafka без ожидания ответа от получателя.
+
+```yaml
+asyncapi: 3.0.0
+info:
+  title: API обмена событиями о транзакциях
+  version: 1.0.0
+  description: Асинхронная передача событий из дистанционного банковского обслуживания в систему мониторинга подозрительной активности
+
+channels:
+  transaction:
+    address: transactions
+    messages:
+      TransactionCreated:
+        $ref: '#/components/messages/TransactionCreated'
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+
+operations:
+  sendTransaction:
+    action: send
+    channel:
+      $ref: '#/channels/transaction'
+    summary: Отправка события о транзакции из дистанционного банковского обслуживания в систему мониторинга
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+        clientId:
+          type: string
+          enum:
+            - dbr-producer
+
+servers:
+  kafkaBroker:
+    host: localhost:9092
+    protocol: kafka
+    description: Kafka broker
+    bindings:
+      kafka:
+        bindingVersion: '0.5.0'
+
+components:
+  messages:
+    TransactionCreated:
+      name: TransactionCreated
+      title: Событие о созданной транзакции
+      contentType: application/vnd.apache.avro
+      payload:
+        schemaFormat: 'application/vnd.apache.avro;version=1.9.0'
+        $ref: './TransactionCreated.avsc'
+```
+
+### Поведение API
+
+- Передача данных выполняется асинхронно
+- Отправитель не ждёт немедленного ответа
+- Сообщения записываются в Kafka-топик `transactions`
+- Система мониторинга получает и обрабатывает событие независимо
+
+### Гарантии доставки
+
+- используется модель `at-least-once`
+- возможна повторная доставка сообщения
+- обработка на стороне получателя должна быть идемпотентной
+- при сбое возможна повторная отправка
+- некорректные сообщения могут попадать в DLQ
+
+### Структура события
+
+Сообщение описывает одну транзакцию пользователя и содержит данные, необходимые для анализа риска.
+
+#### Основные поля
+
+- `idEvent` — уникальный идентификатор события
+- `TimeEvent` — время создания события
+- `SystemSource` — источник события
+- `idUser` — идентификатор пользователя
+- `idTransaction` — идентификатор транзакции
+- `TypeOperation` — тип операции
+- `Amount` — сумма транзакции
+- `Currency` — валюта операции
+- `idDevice` — идентификатор устройства
+- `ipAddress` — IP-адрес
+- `Geolocation` — геолокация
+
+#### Пример схемы сообщения
+
+`docs/api/TransactionCreated.avsc`
+```JOIN
+{
+  "type": "record",
+  "name": "TransactionCreated",
+  "namespace": "transactions",
+  "doc": "Событие о созданной транзакции из дистанционного банковского обслуживания в систему мониторинга",
+  "fields": [
+    {
+      "name": "idEvent",
+      "type": "string",
+      "doc": "Уникальный идентификатор события"
+    },
+    {
+      "name": "TimeEvent",
+      "type": "string",
+      "doc": "Время создания события в формате ISO 8601"
+    },
+    {
+      "name": "SystemSource",
+      "type": "string",
+      "doc": "Источник системы"
+    },
+    {
+      "name": "idUser",
+      "type": "string",
+      "doc": "Идентификатор пользователя"
+    },
+    {
+      "name": "idTransaction",
+      "type": "string",
+      "doc": "Идентификатор транзакции"
+    },
+    {
+      "name": "TypeOperation",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Тип операции"
+    },
+    {
+      "name": "Amount",
+      "type": "double",
+      "doc": "Сумма транзакции"
+    },
+    {
+      "name": "Currency",
+      "type": "string",
+      "doc": "Валюта"
+    },
+    {
+      "name": "idDevice",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Идентификатор устройства"
+    },
+    {
+      "name": "ipAddress",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "IP-адрес"
+    },
+    {
+      "name": "Geolocation",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Геолокация"
+    }
+  ]
+}
+```
+
+### Валидация сообщения
+
+Перед обработкой выполняются проверки:
+
+- наличие обязательных полей;
+- корректность типов данных;
+- уникальность `idEvent`;
+- корректность формата времени;
+- соответствие Avro-схеме.
+
+При ошибке:
+
+- сообщение помечается как `data_error`;
+- сообщение отправляется в DLQ.
+
+### Использование в системе
+
+Событие `TransactionCreated` используется для:
+
+- анализа поведения пользователя;
+- применения правил детекции;
+- расчёта уровня риска;
+- формирования инцидентов;
+- построения аналитики и отчётов.
+
+### Связанные документы
+
+- Архитектура системы
+- Модель данных
+- Сценарии использования
+- Sequence diagram

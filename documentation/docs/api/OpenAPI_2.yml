@@ -1,0 +1,554 @@
+openapi: '3.0.3'
+info:
+  title: API для интерфейса аналитика
+  version: '1.0'
+servers:
+  - url: https://RemoteBankingMonitor.ru
+security:
+  - BearerAuth: []
+tags:
+  - name: Incidents
+    description: API главной страницы
+  - name: IncidentDetails
+    description: API экрана с детальной информацией об инциденте
+  - name: IncidentRules
+    description: API правил срабатывания 
+paths:
+  /api/incidents:
+    get:
+      tags:
+        - Incidents
+      summary: загрузка таблицы на M страницы и поиск по таблице
+      parameters:
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/QuerySearch'
+        - $ref: '#/components/parameters/QuerySources'
+        - $ref: '#/components/parameters/QueryStatus'
+        - $ref: '#/components/parameters/QueryDateFrom'
+        - $ref: '#/components/parameters/QueryDateTo'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentTable'
+        '400':
+          description: Некорректные параметры запроса
+        '503':
+          description: Сервис временно недоступен
+  /api/incidents/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IDIncidentParam'
+    get:
+      tags:
+        - IncidentDetails
+      summary: Детальная информация об инциденте
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentDetails'
+        '400':
+          description: Некорректные параметры запроса
+        '503':
+          description: Сервис временно недоступен
+  /api/incidents/{id}/transaction:
+    get:
+      tags:
+        - IncidentDetails
+      summary: Подробная информация о транзакции
+      parameters:
+        - $ref: '#/components/parameters/IDIncidentParam'
+        - $ref: '#/components/parameters/NumberTransactionParam'
+        - $ref: '#/components/parameters/DateTransactionParam'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InformationTransaction'
+        '400':
+          description: Некорректные параметры запроса
+        '503':
+          description: Сервис временно недоступен
+  /api/incidents/{id}/logs:
+    get:
+      tags:
+        - IncidentDetails
+      summary: Логи транзакций 
+      parameters:
+        - $ref: '#/components/parameters/IDIncidentParam'
+        - $ref: '#/components/parameters/NumberTransactionParam'
+        - $ref: '#/components/parameters/DateTransactionParam' 
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogsTransaction'
+        '400':
+          description: Некорректные параметры запроса
+        '503':
+          description: Сервис временно недоступен
+  /api/incidents/{id}/solution:
+    post:
+      tags:
+        - IncidentDetails
+      summary: Ложное срабатывание или Заблокировать операцию
+      parameters:
+        - $ref: '#/components/parameters/IDIncidentParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - transactionId
+                - transactionDate
+                - Flag
+              properties:
+                transactionId:
+                  $ref: '#/components/schemas/NumberTransaction'
+                transactionDate:
+                  $ref: '#/components/schemas/Date'
+                Flag:
+                  type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Success'
+        '400':
+          description: Некорректные параметры запроса
+        '503':
+          description: Сервис временно недоступен 
+  /api/incidents/rules:
+    get:
+      tags:
+        - IncidentRules 
+      summary: загрузка таблицы на M страницы и поиск по таблице
+      parameters:
+        - $ref: '#/components/parameters/Size'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/QuerySearch'
+        - $ref: '#/components/parameters/QueryStatus'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentTableRule'
+        '400':
+          description: Некорректные параметры запроса
+        '503':
+          description: Сервис временно недоступен
+  /api/incidents/rules/{id}:
+      get:
+        tags:
+          - IncidentRules 
+        summary: Получение редактированного правила
+        parameters:
+          - $ref: '#/components/parameters/IDRulesParam'
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/IncidentRule'
+          '400':
+            description: Некорректные параметры запроса
+          '503':
+            description: Сервис временно недоступен
+      patch:
+        tags:
+          - IncidentRules 
+        summary: Редактирование правила
+        parameters:
+          - $ref: '#/components/parameters/IDRulesParam'
+        requestBody:
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - Rule
+                properties:
+                  Rule:
+                    $ref: '#/components/schemas/Rule'
+                  Change:
+                    $ref: '#/components/schemas/Rule'  
+                  Status:
+                    $ref: '#/components/schemas/StatusRule'
+                  TriggerThreshold:
+                    $ref: '#/components/schemas/TriggerThreshold'                
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Success'  
+          '400':
+            description: Некорректные параметры запроса
+          '503':
+            description: Сервис временно недоступен
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    parameterN:
+      type: integer
+      example: 2
+      description: Значение параметра N
+    parameterM:
+      type: integer
+      example: 3
+      description: Значение параметра M
+    Search:
+      type: string
+      example: подозрительный перевод
+      description: Поиск по введенному слову
+    Risk:
+      type: string
+      enum: 
+        - high
+        - medium
+        - low
+      example: medium
+      description: Уровень риска
+    Rule:
+      type: string
+      description: Название правила
+      example: Сумма перевода
+    StatusRule:
+      type: boolean
+      description: Включено ли правило
+      example: 1
+    TriggerThreshold:
+      type: integer
+      description: Пороговое значение правила
+      example: 300000
+
+    Status:
+      type: string
+      enum: 
+        - UnderReview
+        - UnderAnalysis
+        - Blocked
+      example: UnderAnalysis
+      description: Статус инцидента
+    Sources:
+      type: string
+      enum: 
+        - website
+        - ApplicationMobile
+      example: ApplicationMobile
+      description: Источник инцидента
+    DateTime:
+      type: string
+      format: date-time
+      example: "2026-04-13T16:00:00Z"
+      description: Дата и время
+    IDClient:
+      type: integer
+      example: 1555
+    IDRule:
+      type: integer
+      example: 885
+    IDIncident:
+      type: integer
+      example: 12345
+      description: Идентификатор инцидента
+    NumberTransaction:
+      type: integer
+      example: 1555
+    Date:
+      type: string
+      format: date
+      example: "2026-04-13"
+      description: Дата
+
+    IncidentTable:
+      type: object
+      required:
+        - Number
+        - CountNumbers
+        - Items
+      properties:
+        Number:
+          type: integer
+          description: Номер текущей страницы
+          example: 2
+        CountNumbers:
+          type: integer
+          description: Общее количество записей
+          example: 157
+        Items:
+          type: array
+          items:
+            type: object
+            required:
+              - Risk
+              - Description
+              - Status
+              - Source
+              - Date
+              - id
+            properties:
+              Risk:
+                $ref: '#/components/schemas/Risk'
+              Description:
+                type: string
+              Status:
+                $ref: '#/components/schemas/Status'
+              Source:
+                $ref: '#/components/schemas/Sources'
+              Date:
+                $ref: '#/components/schemas/DateTime'
+              id:
+               $ref: '#/components/schemas/IDIncident'
+
+    IncidentTableRule:
+      type: object
+      required:
+        - Number
+        - CountNumbers
+        - Items
+      properties:
+        Number:
+          type: integer
+          description: Номер текущей страницы
+          example: 2
+        CountNumbers:
+          type: integer
+          description: Общее количество записей
+          example: 157
+        Items:
+          type: array
+          items:
+            type: object
+            required:
+              - Rule
+              - Status
+              - TriggerThreshold
+              - Triggers
+              - FalsePositives
+              - id
+            properties:
+              Rule:
+                $ref: '#/components/schemas/Rule'
+              Status:
+                $ref: '#/components/schemas/StatusRule'
+              TriggerThreshold:
+                $ref: '#/components/schemas/TriggerThreshold'      
+              Triggers:
+                type: integer                
+                description: Количество правдивых срабатываний  
+                example: 154              
+              FalsePositives:
+                type: integer 
+                description: Количество ложных срабатываний  
+                example: 1
+              id:
+                $ref: '#/components/schemas/IDRule'          
+
+    IncidentRule:
+      type: object
+      required:
+        - Rule
+        - Status
+        - TriggerThreshold
+      properties:
+        Rule:
+          $ref: '#/components/schemas/Rule'
+        Status:
+          $ref: '#/components/schemas/StatusRule'
+        TriggerThreshold:
+          $ref: '#/components/schemas/TriggerThreshold'         
+
+    InformationCustomer:
+      type: object
+      required:
+        - FullName
+        - DateOfBirth
+        - Gender
+        - PhoneNumber
+        - CardNumber
+      description: "Модель данных клиента, содержащая основную персональную информацию и номер банковской карты"
+      properties:
+        FullName:
+          type: string
+        DateOfBirth:
+          $ref: '#/components/schemas/Date'
+        Gender:
+          type: string
+          enum:
+            - female
+            - male
+        PhoneNumber:
+          type: string
+          pattern: '^\+?[0-9]{10,15}$'
+          example: "+79123456789"
+        CardNumber:
+          type: string
+          pattern: '^\d{13,19}$'
+          example: "427123123123"
+          description: "Номер банковской карты без пробелов и дефисов"
+    IncidentDetails:
+      type: object
+      required:
+        - id
+        - Risk
+        - Status
+        - Description
+        - Date
+        - customer
+      properties:
+        id:
+          type: integer
+          description: Идентификатор инцидента
+          example: 12345
+        Risk:
+          $ref: '#/components/schemas/Risk'
+        Status:
+          $ref: '#/components/schemas/Status'
+        Description:
+          type: string
+          example: "Перевод на крупную сумму в ночное время"
+        Date:
+          $ref: '#/components/schemas/DateTime'
+        customer:
+          $ref: '#/components/schemas/InformationCustomer'
+          
+    RuleSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    InformationTransaction:
+      type: object
+      required:
+        - Sum
+        - DateTime
+        - RiskAssessment
+        - ListRules
+      properties:
+        Sum:
+          type: integer
+        DateTime:
+          $ref: '#/components/schemas/DateTime'
+        RiskAssessment:
+          type: integer
+        ListRules:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleSummary'
+    LogsTransaction:
+      type: array
+      items:
+        type: object
+        required:
+          - DateTime
+          - Description
+        properties:
+          DateTime:
+            $ref: '#/components/schemas/DateTime'
+          Description:
+            type: string
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+
+  parameters:
+    Size:
+      name: size
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/parameterN'
+    Page:
+      name: page
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/parameterM'
+    QuerySearch:
+      name: search
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Search'
+    QuerySources:
+      name: sources
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Sources'
+    QueryStatus:
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Status'
+    QueryDateFrom:
+      name: DateFrom
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Date'
+    QueryDateTo:
+      name: DateTo
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Date'
+    IDClientParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/IDClient'
+    IDRulesParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/IDRule'
+    IDIncidentParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/IDIncident'
+    NumberTransactionParam:
+      name: NumberTransaction
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/NumberTransaction'
+    DateTransactionParam:
+      name: DateTransaction
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/Date'
