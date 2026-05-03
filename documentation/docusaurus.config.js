@@ -76,15 +76,15 @@ const config = {
             sidebarId: 'tutorialSidebar',
             position: 'left',
             label: 'Документация',
+          },          
+          {
+            to: '/docs/architecture/arch',
+            label: 'Архитектура',
+            position: 'left',
           },
           {
             to: '/docs/api',
             label: 'API',
-            position: 'left',
-          },
-          {
-            to: '/docs/architecture/arch',
-            label: 'Архитектура',
             position: 'left',
           },
           {
@@ -94,7 +94,7 @@ const config = {
           },
           {
             to: '/docs/use-cases',
-            label: 'use-cases',
+            label: 'Use-cases',
             position: 'left',
           },
           {
@@ -116,6 +116,10 @@ const config = {
             title: 'Документация',
             items: [
               { label: 'Введение', to: '/docs/intro' },
+              { label: 'Архитектура', to: '/docs/architecture/arch' },
+              { label: 'Модель данных', to: '/docs/model' },
+              { label: 'API', to: '/docs/api' },
+              { label: 'UI', to: '/docs/ui' },
             ],
           },
           {

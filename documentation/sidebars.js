@@ -9,7 +9,7 @@ const sidebars = {
 
     {
       type: 'category',
-      label: 'architecture',
+      label: 'Aрхитектура',
       items: [
         'architecture/arch',
         'architecture/technologyStack',
