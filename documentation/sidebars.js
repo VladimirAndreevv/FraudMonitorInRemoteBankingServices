@@ -6,6 +6,7 @@
 const sidebars = {
   tutorialSidebar: [
     'intro',
+    'requirements',
 
     {
       type: 'category',
@@ -13,6 +14,7 @@ const sidebars = {
       items: [
         'architecture/arch',
         'architecture/technologyStack',
+        'architecture/C4',
       ],
     },
 

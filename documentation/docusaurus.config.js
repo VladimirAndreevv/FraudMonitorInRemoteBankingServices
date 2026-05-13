@@ -76,7 +76,13 @@ const config = {
             sidebarId: 'tutorialSidebar',
             position: 'left',
             label: 'Документация',
-          },          
+          },  
+           
+          {
+            to: '/docs/requirements',
+            position: 'left',
+            label: 'Требования и ограничения',
+          },        
           {
             to: '/docs/architecture/arch',
             label: 'Архитектура',
